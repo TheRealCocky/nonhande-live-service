@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, BadRequestException } from '@nestjs/common';
 import { LiveService } from '../services/live.service';
 import { CreateRoomDto } from '../dto/create-room.dto';
 
@@ -6,11 +6,22 @@ import { CreateRoomDto } from '../dto/create-room.dto';
 export class LiveController {
   constructor(private readonly liveService: LiveService) {}
 
+  // ROTA PARA O FRONTEND BUSCAR ALUNOS REAIS
+  @Get('users')
+  async getUsers() {
+    return this.liveService.getAvailableUsers();
+  }
+
   @Post('room')
-  // Aqui podes adicionar o teu @UseGuards(JwtAuthGuard) se quiseres proteger
-  async createRoom(@Body() dto: CreateRoomDto, @Req() req: any) {
-    // Simulando userId do request, ajusta conforme o teu Auth
-    const userId = req.user?.id || "ID_TESTE_MONGODB";
+  async createRoom(@Body() dto: CreateRoomDto & { callerId?: string }, @Req() req: any) {
+    // Prioridade 1: ID do Token (Segurança)
+    // Prioridade 2: ID enviado pelo Body (Debug/Demo)
+    const userId = req.user?.id || dto.callerId;
+
+    if (!userId) {
+      throw new BadRequestException('Mestre, é necessário o ID do Professor (Caller).');
+    }
+
     return this.liveService.initSession(userId, dto);
   }
 
@@ -23,6 +34,7 @@ export class LiveController {
   async closeRoom(@Param('roomId') roomId: string) {
     return this.liveService.endSession(roomId);
   }
+
   @Get('health')
   async healthCheck() {
     return {
