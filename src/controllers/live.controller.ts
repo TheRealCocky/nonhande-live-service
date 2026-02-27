@@ -23,4 +23,12 @@ export class LiveController {
   async closeRoom(@Param('roomId') roomId: string) {
     return this.liveService.endSession(roomId);
   }
+  @Get('health')
+  async healthCheck() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      message: 'Nonhande Live Service is awake 🇦🇴'
+    };
+  }
 }
