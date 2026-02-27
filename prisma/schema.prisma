@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  email String @unique
+
+  // Usamos o mesmo nome de relação que o server principal já conhece
+  calls Call[] @relation("UserCalls")
+}
+
+model Call {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  roomId String @unique // Essencial para o Socket.io encontrar a sala
+
+  callerId String @db.ObjectId
+  calleeId String @db.ObjectId // Nome que está no server principal
+
+  status    String    @default("PENDING") // PENDING, ONGOING, COMPLETED
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  // Relacionamos com o User usando o nome da relação do server principal
+  user User @relation("UserCalls", fields: [callerId], references: [id])
+}
