@@ -21,20 +21,40 @@ export class LiveService {
   }
 
   async initSession(userId: string, dto: CreateRoomDto) {
-    // Validação de segurança: Verifica se os IDs são válidos antes de tentar criar
-    if (!userId.match(/^[0-9a-fA-F]{24}$/) || !dto.calleeId.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new BadRequestException('Os IDs fornecidos não são válidos para o MongoDB.');
+    // 1. LOGS DE SEGURANÇA (Vais ver isto no terminal do VSCode ou no log do Render)
+    console.log('--- [DEBUG INICIAR SESSÃO] ---');
+    console.log('ID do Professor (userId):', `"${userId}"`); // Ver se tem aspas extras ou espaços
+    console.log('ID do Aluno (calleeId):', `"${dto.calleeId}"`);
+    console.log('Título da Aula:', dto.title);
+    console.log('------------------------------');
+
+    // 2. VALIDAÇÃO FLEXÍVEL
+    // Verificamos se os IDs existem. Se o Regex for muito rígido, a demo falha por um espaço vazio.
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+
+    if (!userId || !objectIdRegex.test(userId)) {
+      throw new BadRequestException(`ID do Professor inválido: ${userId}`);
     }
 
-    return this.prisma.call.create({
-      data: {
-        roomId: uuidv4(),
-        callerId: userId,
-        calleeId: dto.calleeId,
-        status: 'ONGOING',
-        startedAt: new Date(),
-      },
-    });
+    if (!dto.calleeId || !objectIdRegex.test(dto.calleeId)) {
+      throw new BadRequestException(`ID do Aluno inválido: ${dto.calleeId}`);
+    }
+
+    try {
+      // 3. CRIAÇÃO NO PRISMA
+      return await this.prisma.call.create({
+        data: {
+          roomId: uuidv4(),
+          callerId: userId,
+          calleeId: dto.calleeId,
+          status: 'ONGOING',
+          startedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      console.error('❌ Erro Crítico no Prisma:', error);
+      throw new BadRequestException('Maka ao gravar no MongoDB Atlas. Verifica a conexão.');
+    }
   }
 
   async getRoomStatus(roomId: string) {
