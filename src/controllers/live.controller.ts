@@ -6,35 +6,51 @@ import { CreateRoomDto } from '../dto/create-room.dto';
 export class LiveController {
   constructor(private readonly liveService: LiveService) {}
 
-  // ROTA PARA O FRONTEND BUSCAR ALUNOS REAIS
+  /**
+   * Recupera a lista de usuários (alunos) para o professor selecionar no frontend.
+   * Evita a necessidade de copiar IDs manualmente.
+   */
   @Get('users')
   async getUsers() {
     return this.liveService.getAvailableUsers();
   }
 
+  /**
+   * Inicia uma nova sessão de aula (Call).
+   * O callerId é validado via DTO para evitar erro de ObjectID malformado.
+   */
   @Post('room')
-  async createRoom(@Body() dto: CreateRoomDto & { callerId?: string }, @Req() req: any) {
-    // Prioridade 1: ID do Token (Segurança)
-    // Prioridade 2: ID enviado pelo Body (Debug/Demo)
-    const userId = req.user?.id || dto.callerId;
+  async createRoom(@Body() dto: CreateRoomDto) {
+    // Usamos o callerId que vem no body (enviado pelo frontend)
+    // Isso garante compatibilidade total com o MongoDB Atlas.
+    const userId = dto.callerId;
 
     if (!userId) {
-      throw new BadRequestException('Mestre, é necessário o ID do Professor (Caller).');
+      throw new BadRequestException('Mestre, o ID do Professor (callerId) é obrigatório.');
     }
 
     return this.liveService.initSession(userId, dto);
   }
 
+  /**
+   * Verifica se uma sala existe e se o status é 'ONGOING'.
+   */
   @Get('room/:roomId')
   async checkRoom(@Param('roomId') roomId: string) {
     return this.liveService.getRoomStatus(roomId);
   }
 
+  /**
+   * Encerra a sessão de aula, alterando o status para 'COMPLETED'.
+   */
   @Post('room/:roomId/end')
   async closeRoom(@Param('roomId') roomId: string) {
     return this.liveService.endSession(roomId);
   }
 
+  /**
+   * Verificação de saúde do microserviço.
+   */
   @Get('health')
   async healthCheck() {
     return {

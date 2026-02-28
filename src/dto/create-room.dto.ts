@@ -1,13 +1,16 @@
-import { IsString, IsNotEmpty, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional } from 'class-validator';
 
 export class CreateRoomDto {
-  @IsMongoId()
+  @IsMongoId({ message: 'O ID do aluno deve ser um MongoID válido' })
   @IsNotEmpty()
-  calleeId: string; // O ID do usuário que vai receber a chamada (MongoID válido)
+  calleeId: string;
 
-  // Se quiseres manter o title para lógica interna, podes,
-  // mas ele não será gravado no banco conforme o teu Schema atual.
   @IsString()
   @IsNotEmpty()
   title: string;
+
+  // Adicionamos este campo para o NestJS aceitar o ID que vem do Frontend
+  @IsMongoId({ message: 'O seu ID de professor deve ser um MongoID válido' })
+  @IsNotEmpty()
+  callerId: string;
 }
